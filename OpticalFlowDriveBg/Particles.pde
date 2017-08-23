@@ -1,3 +1,5 @@
+// Class that represent a particle and 
+// it's velocity 
 
 float drag = 0.1;
 
@@ -28,12 +30,19 @@ class Particle {
   
   void Update(PVector newVel) {
     
+    // Slow down over time
     velocity.add(-drag * velocity.x, -drag * velocity.y);
+    // Add new velocity impulse.  This is sort of like
+    // acceleration
     velocity.add(newVel);
+    // Let's not got too fast
     velocity.limit(min(maxDisplayX  - minDisplayX, maxDisplayY  - minDisplayY)/2);
     
+    // Update the particles position
     position.add(velocity);
     
+    // Add a impulse to return the particle back to
+    // it's origin
     PVector dir = PVector.sub(origin, position);
     
     if(dir.mag() > 1.0) {
@@ -41,6 +50,7 @@ class Particle {
       position.add(dir);    
     }
     
+    // Bounce the particles off the sides
     if(position.x < minDisplayX) {
       position.x = 2*minDisplayX - position.x;
       velocity.x = -velocity.x;
@@ -67,6 +77,7 @@ class Particle {
   }
 }
 
+// Create an array of particles and thier initial positions
 Particle[] createGrid(int sizeX, int sizeY, float minX, float minY, float maxX, float maxY) {
   
   minDisplayX = minX;
