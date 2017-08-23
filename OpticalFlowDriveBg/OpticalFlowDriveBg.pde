@@ -163,6 +163,7 @@ void drawSideBarBorder() {
   rect(width - sideBarSize - 10, 0, 10, height);
 }
 
+// Calculate the new region velocities from the camera image
 void calculateVelGrid() {
   if(camera.available()) {
     camera.read();
@@ -189,6 +190,8 @@ void calculateVelGrid() {
   }
 }
 
+// loop through all the particles and impart the 
+// velocity from the region they are positioned over
 void updateParticles() {
   int regWidth = width / velGridWidth;
   int regHeight = height / velGridHeight;
@@ -206,6 +209,7 @@ void updateParticles() {
   }  
 }
 
+// Draw baed on the displayOption setting
 void drawStuff() {
   if(displayOption == 1)
     drawGridDots();
@@ -217,7 +221,7 @@ void drawStuff() {
     drawGridCycleColor();
 }
 
-
+// Main draw function
 void draw() {
   updateParticles();
   drawStuff();
@@ -230,6 +234,7 @@ void draw() {
   }
 }
 
+// Handle keyboard input
 void keyPressed() {
   if (key=='f' || key=='F') {
     displayFPS = !displayFPS;
@@ -271,7 +276,7 @@ void keyPressed() {
   }
 }
 
-
+// Thread calss for background image processing
 class FlowThread implements Runnable {
   Thread thread;
   
