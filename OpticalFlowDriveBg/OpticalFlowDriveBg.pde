@@ -1,7 +1,8 @@
 import gab.opencv.*;
 import processing.video.*;
 
-int displayOption = 1;
+// Setting for dislay 
+int displayOption = 1; // 1-4
 boolean displayFPS = false;
 boolean displayBorder = false;
 
@@ -9,53 +10,65 @@ Capture camera;
 OpenCV opencv;
 FlowThread flowThread;
 
-Particle[] grid;
+// Define the cameras. Uncomment the one you want to use 
+String cameraName = "Built-in iSight";
+int cameraWidth = 320;
+int cameraHeight = 240;
 
+//String cameraName = "HUE HD Camera";
+//int cameraWidth = 320;
+//int cameraHeight = 180;
+
+// The velocity grid is a 2D array of average pixel velocities
+// computed from OpenCVs optical flow functions
+int velGridWidth = cameraWidth / 5;
+int velGridHeight = cameraHeight / 5;
 PVector[] velocityGrid;
 
-int captureWidth = 320;
-int captureHeight = 240;
-int velGridWidth = captureWidth / 5;
-int velGridHeight = captureHeight / 5;
+int sideBarSize = 50;
+int sideBarInc = 1;
 
-int borderSize = 50;
-int borderInc = 1;
-
+// The approximate number of particles to display. The
+// particles are layed out in a grid whose width and height
+// are propotional to the display area size.
 int totalNumParticles = 10000;
-
+Particle[] grid;
+// Size of the rectangle display for each particle
 int dotSize = 8;
 
+// Used by the color cycling display
 color beginColor = color(255);
 color endColor = color(255);
 
+// Create all the particles
 void setupParticles() {
   
-  int displayAreaWidth = width - (borderSize + dotSize) * 2;
+  int displayAreaWidth = width - (sideBarSize + dotSize) * 2;
   int displayAreaHeight = height - dotSize * 2;
   
   int partGridWidth = int(sqrt(totalNumParticles * displayAreaWidth / displayAreaHeight));
   int partGridHeight = totalNumParticles/partGridWidth;
   println("grid width = ", partGridWidth, ", grid height = ", partGridHeight);
   grid = createGrid(partGridWidth, partGridHeight, 
-          borderSize + dotSize, 
+          sideBarSize + dotSize, 
           dotSize, 
-          width - borderSize - dotSize, 
+          width - sideBarSize - dotSize, 
           height - dotSize);
 }
 
 
 void setup() {
   fullScreen();
-  println(width,height);
-  //size(640, 480);
-  camera = new Capture(this, captureWidth, captureHeight);
-  opencv = new OpenCV(this, captureWidth, captureHeight);
+
+  camera = new Capture(this, cameraWidth, cameraHeight, cameraName, 30);
+  opencv = new OpenCV(this, cameraWidth, cameraHeight);
   
   smooth();
   noStroke();
 
   background(0); 
   
+  // Create and initialize the grid of velocities
   velocityGrid = new PVector[velGridWidth * velGridHeight];
   for(int idx = 0; idx < velocityGrid.length; ++idx) {
     velocityGrid[idx] = new PVector(0,0);
@@ -63,11 +76,14 @@ void setup() {
   
   setupParticles();
 
+  // start a background thread that grabs
+  // the camera image and computes the regional
+  // velocities
   flowThread = new FlowThread();
   flowThread.start();
-
 }
 
+// displayOption = 1
 void drawGridDots() {
   background(0);
   noStroke();
@@ -80,6 +96,7 @@ void drawGridDots() {
   }
 }
 
+// displayOption = 2
 void drawGridBlend() {
   fill(0, 10); // semi-transparent white
   rect(0, 0, width, height);
@@ -93,6 +110,7 @@ void drawGridBlend() {
   }
 }
 
+// displayOption = 3
 void drawGridSpeedColor() {
   fill(0, 10); // semi-transparent white
   rect(0, 0, width, height);
@@ -112,12 +130,13 @@ void updateColor() {
   endColor = color(random(64,255), random(64,255), random(64,255)); 
 }
 
+// displayOption = 4
 void drawGridCycleColor() {
   fill(0, 10); // semi-transparent white
   rect(0, 0, width, height);
   noStroke();
 
-  if(frameCount % 10 == 0)
+  if(frameCount % 60 == 0)
     updateColor();
     
   color c = lerpColor(beginColor, endColor, float(frameCount % 10) / 10.0);
@@ -128,6 +147,7 @@ void drawGridCycleColor() {
   }
 }
 
+// Draw the number of frames per second
 void drawFPS() {
   fill(0);
   rect(0, height-12, 40, 12);
@@ -136,10 +156,11 @@ void drawFPS() {
   text(Integer.toString(int(frameRate)), 22, height);
 }
 
-void drawBorder() {
+// Draw the side bar border
+void drawSideBarBorder() {
   fill(255, 0, 0);
-  rect(borderSize, 0, 10, height);
-  rect(width - borderSize - 10, 0, 10, height);
+  rect(sideBarSize, 0, 10, height);
+  rect(width - sideBarSize - 10, 0, 10, height);
 }
 
 void calculateVelGrid() {
@@ -149,13 +170,13 @@ void calculateVelGrid() {
     opencv.flip(OpenCV.HORIZONTAL);
     opencv.calculateOpticalFlow();
     
-    int regWidth = captureWidth / velGridWidth;
-    int regHeight = captureHeight / velGridHeight;
+    int regionWidth = cameraWidth / velGridWidth;
+    int regionHeight = cameraHeight / velGridHeight;
     
     int idx = 0;
     for(int y = 0; y < velGridHeight; ++y) {
       for(int x = 0; x < velGridWidth; ++x) {
-        velocityGrid[idx] = opencv.getAverageFlowInRegion(x * regWidth, y * regHeight, regWidth, regHeight);
+        velocityGrid[idx] = opencv.getAverageFlowInRegion(x * regionWidth, y * regionHeight, regionWidth, regionHeight);
         if(Float.isNaN(velocityGrid[idx].x)) {
           velocityGrid[idx].x = 0;
         }
@@ -205,7 +226,7 @@ void draw() {
     drawFPS();
   }
   if(displayBorder) {
-    drawBorder();
+    drawSideBarBorder();
   }
 }
 
@@ -214,7 +235,7 @@ void keyPressed() {
     displayFPS = !displayFPS;
   }
   if (key=='b' || key=='B') {
-    borderInc = 1;
+    sideBarInc = 1;
     displayBorder = !displayBorder;
     if(!displayBorder) {
       setupParticles();
@@ -233,19 +254,19 @@ void keyPressed() {
     displayOption = 4;
   }
   else if(displayBorder && keyCode == RIGHT) {
-    if(borderSize < width/2 - 100) {
-      borderSize += borderInc;
+    if(sideBarSize < width/2 - 100) {
+      sideBarSize += sideBarInc;
       
-      if(borderInc < 10)
-        borderInc += 1;
+      if(sideBarInc < 10)
+        sideBarInc += 1;
     }
   }
   else if(displayBorder && keyCode == LEFT) {
-    if(borderSize > 0) {
-      borderSize -= borderInc;
+    if(sideBarSize > 0) {
+      sideBarSize -= sideBarInc;
 
-      if(borderInc < 10)
-        borderInc += 1;
+      if(sideBarInc < 10)
+        sideBarInc += 1;
     }
   }
 }
