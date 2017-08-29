@@ -54,25 +54,21 @@ class Particle {
     if(position.x < minDisplayX) {
       position.x = 2*minDisplayX - position.x;
       velocity.x = -velocity.x;
-      println("minx");
     }
     
     if(position.x >= maxDisplayX) {
       position.x = 2*maxDisplayX - position.x;
       velocity.x = -velocity.x;
-      println("maxx");
     }
     
     if(position.y < minDisplayY) {
       position.y = 2*minDisplayY - position.y;
       velocity.y = -velocity.y;
-      println("miny");
     }
     
     if(position.y >= maxDisplayY) {
       position.y = 2*maxDisplayY - position.y;
       velocity.y = -velocity.y;
-      println("maxy");
     }
   }
 }

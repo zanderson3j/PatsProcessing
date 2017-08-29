@@ -5,19 +5,20 @@ import processing.video.*;
 int displayOption = 1; // 1-4
 boolean displayFPS = false;
 boolean displayBorder = false;
+boolean flipHorizontal = false;
 
 Capture camera;
 OpenCV opencv;
 FlowThread flowThread;
 
 // Define the cameras. Uncomment the one you want to use 
-String cameraName = "Built-in iSight";
-int cameraWidth = 320;
-int cameraHeight = 240;
-
-//String cameraName = "HUE HD Camera";
+//String cameraName = "Built-in iSight";
 //int cameraWidth = 320;
-//int cameraHeight = 180;
+//int cameraHeight = 240;
+
+String cameraName = "HUE HD Camera";
+int cameraWidth = 320;
+int cameraHeight = 180;
 
 // The velocity grid is a 2D array of average pixel velocities
 // computed from OpenCVs optical flow functions
@@ -59,6 +60,10 @@ void setupParticles() {
 
 void setup() {
   fullScreen();
+  
+  String[] camList = Capture.list();
+  for(int i = 0; i < camList.length; ++i)
+    println(camList[i]);
 
   camera = new Capture(this, cameraWidth, cameraHeight, cameraName, 30);
   opencv = new OpenCV(this, cameraWidth, cameraHeight);
@@ -168,7 +173,8 @@ void calculateVelGrid() {
   if(camera.available()) {
     camera.read();
     opencv.loadImage(camera);
-    opencv.flip(OpenCV.HORIZONTAL);
+    if(flipHorizontal)
+      opencv.flip(OpenCV.HORIZONTAL);
     opencv.calculateOpticalFlow();
     
     int regionWidth = cameraWidth / velGridWidth;
@@ -238,6 +244,9 @@ void draw() {
 void keyPressed() {
   if (key=='f' || key=='F') {
     displayFPS = !displayFPS;
+  }
+  else if(key == 'h' || key == 'H') {
+    flipHorizontal = !flipHorizontal;
   }
   if (key=='b' || key=='B') {
     sideBarInc = 1;
