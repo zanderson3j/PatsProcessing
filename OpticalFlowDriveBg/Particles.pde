@@ -10,6 +10,8 @@ float maxDisplayX = 0;
 float minDisplayY = 0;
 float maxDisplayY = 0;
 
+float velocityScale = 0.5;
+
 class Particle {
     
   public PVector origin;
@@ -30,6 +32,7 @@ class Particle {
   
   void Update(PVector newVel) {
     
+    newVel.mult(velocityScale);
     // Slow down over time
     velocity.add(-drag * velocity.x, -drag * velocity.y);
     // Add new velocity impulse.  This is sort of like

@@ -17,8 +17,11 @@ FlowThread flowThread;
 //int cameraHeight = 240;
 
 String cameraName = "HUE HD Camera";
-int cameraWidth = 320;
-int cameraHeight = 180;
+int cameraWidth = 640;
+int cameraHeight = 360;
+
+// How much of the image actually gets processed
+int processFlowWidth = 320;
 
 // The velocity grid is a 2D array of average pixel velocities
 // computed from OpenCVs optical flow functions
@@ -27,7 +30,7 @@ int velGridHeight = cameraHeight / 5;
 PVector[] velocityGrid;
 
 int sideBarSize = 50;
-int sideBarInc = 1;
+int valueInc = 1;
 
 // The approximate number of particles to display. The
 // particles are layed out in a grid whose width and height
@@ -40,6 +43,9 @@ int dotSize = 8;
 // Used by the color cycling display
 color beginColor = color(255);
 color endColor = color(255);
+
+// Backgroung blending alpha value
+int blendAlpha = 80;
 
 // Create all the particles
 void setupParticles() {
@@ -103,7 +109,7 @@ void drawGridDots() {
 
 // displayOption = 2
 void drawGridBlend() {
-  fill(0, 10); // semi-transparent white
+  fill(0, blendAlpha); // semi-transparent white
   rect(0, 0, width, height);
   noStroke();
   fill(255);
@@ -117,7 +123,7 @@ void drawGridBlend() {
 
 // displayOption = 3
 void drawGridSpeedColor() {
-  fill(0, 10); // semi-transparent white
+  fill(0, blendAlpha); // semi-transparent white
   rect(0, 0, width, height);
   noStroke();
   
@@ -137,14 +143,14 @@ void updateColor() {
 
 // displayOption = 4
 void drawGridCycleColor() {
-  fill(0, 10); // semi-transparent white
+  fill(0, blendAlpha); // semi-transparent white
   rect(0, 0, width, height);
   noStroke();
 
   if(frameCount % 60 == 0)
     updateColor();
     
-  color c = lerpColor(beginColor, endColor, float(frameCount % 10) / 10.0);
+  color c = lerpColor(beginColor, endColor, float(frameCount % 60) / 60.0);
   
   for(int idx = 0; idx < grid.length; ++idx) {
     fill(c);
@@ -173,12 +179,17 @@ void calculateVelGrid() {
   if(camera.available()) {
     camera.read();
     opencv.loadImage(camera);
+    
+    int regionOffset = (cameraWidth - processFlowWidth)/2;
+    int regionWidth = processFlowWidth / velGridWidth;
+    int regionHeight = cameraHeight / velGridHeight;
+
+    opencv.setROI(regionOffset, 0, processFlowWidth, cameraHeight);
     if(flipHorizontal)
       opencv.flip(OpenCV.HORIZONTAL);
     opencv.calculateOpticalFlow();
     
-    int regionWidth = cameraWidth / velGridWidth;
-    int regionHeight = cameraHeight / velGridHeight;
+    
     
     int idx = 0;
     for(int y = 0; y < velGridHeight; ++y) {
@@ -247,9 +258,10 @@ void keyPressed() {
   }
   else if(key == 'h' || key == 'H') {
     flipHorizontal = !flipHorizontal;
+    println("flip");
   }
   if (key=='b' || key=='B') {
-    sideBarInc = 1;
+    valueInc = 1;
     displayBorder = !displayBorder;
     if(!displayBorder) {
       setupParticles();
@@ -267,20 +279,28 @@ void keyPressed() {
   else if (key=='4') {
     displayOption = 4;
   }
+  else if(key == 'q' || key == 'Q') {
+    blendAlpha = constrain(blendAlpha - 20, 10, 255);
+    println("Blend alpha", blendAlpha);
+  }
+  else if(key == 'w' || key == 'W') {
+    blendAlpha = constrain(blendAlpha + 20, 10, 255);
+    println("Blend alpha", blendAlpha);
+  }
   else if(displayBorder && keyCode == RIGHT) {
     if(sideBarSize < width/2 - 100) {
-      sideBarSize += sideBarInc;
+      sideBarSize += valueInc;
       
-      if(sideBarInc < 10)
-        sideBarInc += 1;
+      if(valueInc < 10)
+        valueInc += 1;
     }
   }
   else if(displayBorder && keyCode == LEFT) {
     if(sideBarSize > 0) {
-      sideBarSize -= sideBarInc;
+      sideBarSize -= valueInc;
 
-      if(sideBarInc < 10)
-        sideBarInc += 1;
+      if(valueInc < 10)
+        valueInc += 1;
     }
   }
 }
